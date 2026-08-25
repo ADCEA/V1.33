@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Blanchisserie Cézanne — Du linge propre, livré dans les temps</title>
+
+<!-- Mobile / ajout à l'écran d'accueil -->
+<meta name="theme-color" content="#1D91FF">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cézanne">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/img/favicon-16.png">
+<link rel="apple-touch-icon" href="/img/apple-touch-icon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <div class="brand" id="brand-home-link" style="cursor:pointer;" role="button" tabindex="0" aria-label="Retour à mon espace">
+      <img class="brand-logo" alt="Blanchisserie Cézanne" src="/img/logo.png">
+    </div>
+    <nav class="tabs">
+      <button data-view="espace" class="active">Mon espace</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <!-- ===================== VIEW: COMMANDER ===================== -->
+  <div class="view" id="view-commander">
+    <section class="block wrap">
+      <div class="block-head">
+        <div>
+          <div class="eyebrow">Nouvelle commande</div>
+          <h3>Composez votre collecte</h3>
+          <p>Renseignez vos coordonnées et sélectionnez les quantités par catégorie de linge.</p>
+        </div>
+      </div>
+
+      <div class="order-grid">
+        <div>
+          <div class="card" style="margin-bottom:20px;">
+            <h4 class="card-subhead">Informations client</h4>
+            <div class="field-row">
+              <div class="field"><label>Société / établissement</label><input id="f-societe" placeholder="Ex. Hôtel Verlaine"></div>
+              <div class="field"><label>Nom du contact</label><input id="f-contact" placeholder="Ex. Camille Roux"></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><label>Téléphone</label><input id="f-tel" placeholder="06 12 34 56 78"></div>
+              <div class="field"><label>Date de livraison souhaitée (optionnel)</label><input id="f-livraison" type="date"></div>
+            </div>
+            <div class="field"><label>Adresse de collecte</label><input id="f-adresse" placeholder="Ex. 12 rue de la Paix, 84200 Carpentras"></div>
+            <div class="field"><label>Notes (optionnel)</label><textarea id="f-notes" rows="2" placeholder="Instructions particulières, taches, urgence..."></textarea></div>
+          </div>
+
+          <div class="card">
+            <h4 class="card-subhead" style="margin-bottom:6px;">Linge à traiter</h4>
+            <p style="font-size:12.5px;color:var(--steel);margin:0 0 10px;">Indiquez le nombre de pièces par catégorie.</p>
+            <div class="service-list" id="service-list"></div>
+          </div>
+        </div>
+
+        <div class="summary">
+          <div class="card">
+            <h4>Ticket en préparation</h4>
+            <div id="summary-lines"><p class="empty-note">Aucun article sélectionné pour le moment.</p></div>
+            <div class="form-error" id="order-error"></div>
+            <button class="btn-primary" id="btn-submit" disabled>Valider la commande</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===================== VIEW: CONFIRMATION ===================== -->
+  <div class="view" id="view-confirmation">
+    <section class="block wrap">
+      <div class="confirm-wrap">
+        <div class="ticket" id="confirm-ticket"></div>
+      </div>
+      <div style="text-align:center;">
+        <button class="btn-secondary" id="btn-new-order">Passer une nouvelle commande</button>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===================== VIEW: ESPACE PERSONNEL ===================== -->
+  <div class="view active" id="view-espace">
+    <section class="block wrap">
+
+      <div id="espace-auth" class="auth-wrap">
+        <div class="eyebrow" style="text-align:center;">Espace personnel</div>
+        <h3 style="text-align:center;margin-bottom:22px;">Accédez à votre compte</h3>
+
+        <div class="auth-toggle">
+          <button data-auth="connexion" class="active">Connexion</button>
+          <button data-auth="inscription">Inscription</button>
+        </div>
+
+        <div class="auth-form active card" id="form-connexion">
+          <div class="auth-error" id="err-connexion"></div>
+          <div class="field"><label>Email</label><input id="login-email" type="email" placeholder="vous@societe.fr"></div>
+          <div class="field"><label>Code d'accès</label><input id="login-code" type="password" inputmode="numeric" maxlength="8" placeholder="••••"></div>
+          <button class="btn-primary" id="btn-login">Se connecter</button>
+        </div>
+
+        <div class="auth-form card" id="form-inscription">
+          <div class="auth-error" id="err-inscription"></div>
+          <div class="field"><label>Société / établissement</label><input id="reg-societe" placeholder="Ex. Hôtel Verlaine"></div>
+          <div class="field-row">
+            <div class="field"><label>Nom du contact</label><input id="reg-contact" placeholder="Ex. Camille Roux"></div>
+            <div class="field"><label>Téléphone</label><input id="reg-tel" placeholder="06 12 34 56 78"></div>
+          </div>
+          <div class="field"><label>Adresse</label><input id="reg-adresse" placeholder="Ex. 12 rue de la Paix, 84200 Carpentras"></div>
+          <div class="field-hint">Merci d'inclure le code postal — ça évite les erreurs de localisation pour l'organisation des tournées.</div>
+          <div class="field"><label>Email</label><input id="reg-email" type="email" placeholder="vous@societe.fr"></div>
+          <div class="field-row">
+            <div class="field"><label>Code d'accès</label><input id="reg-code" type="password" inputmode="numeric" maxlength="8" placeholder="4 à 8 chiffres"></div>
+            <div class="field"><label>Confirmer le code</label><input id="reg-code2" type="password" inputmode="numeric" maxlength="8" placeholder="4 à 8 chiffres"></div>
+          </div>
+          <div class="field-hint">Ce code protège l'accès à votre espace. Choisissez-en un dont vous vous souviendrez, il n'est pas récupérable en cas d'oubli.</div>
+          <button class="btn-primary" id="btn-register">Créer mon compte</button>
+        </div>
+      </div>
+
+      <div id="espace-dashboard" style="display:none;">
+        <div class="espace-header">
+          <div>
+            <h3 id="dash-societe">—</h3>
+            <span id="dash-email"></span>
+          </div>
+          <button class="btn-logout" id="btn-logout">Se déconnecter</button>
+        </div>
+        <div id="nps-card"></div>
+
+        <div class="card" style="margin-bottom:24px;">
+          <h4 class="card-subhead" style="margin-bottom:4px;">Informations de facturation</h4>
+          <p style="font-size:12.5px;color:var(--steel);margin:0 0 12px;">Ces informations nous permettent d'établir vos factures correctement. Elles ne sont pas obligatoires pour commander, mais nécessaires pour la facturation.</p>
+          <div class="field-row">
+            <div class="field"><label>SIRET</label><input id="billing-siret" inputmode="numeric" maxlength="14" placeholder="14 chiffres"></div>
+            <div class="field"><label>N° TVA intracommunautaire</label><input id="billing-tva" placeholder="Ex. FR12345678901"></div>
+          </div>
+          <div class="field"><label>Adresse de facturation (si différente de l'adresse de collecte)</label><input id="billing-adresse" placeholder="Laisser vide pour utiliser l'adresse de collecte"></div>
+          <button class="btn-secondary" id="btn-save-billing" style="width:auto;margin-top:8px;">Enregistrer</button>
+          <div class="qty-save-note" id="billing-note"></div>
+        </div>
+
+        <button class="btn-secondary" id="btn-espace-new-order" style="margin-bottom:24px;">+ Nouvelle commande</button>
+        <h4 class="card-subhead">Historique de vos commandes</h4>
+        <div class="own-orders" id="own-orders"></div>
+
+        <div id="own-invoices-section" style="display:none;margin-top:24px;">
+          <h4 class="card-subhead">Vos factures</h4>
+          <div id="own-invoices"></div>
+        </div>
+      </div>
+
+    </section>
+  </div>
+
+  <!-- ===================== VIEW: ADMIN ===================== -->
+  <div class="view" id="view-admin">
+    <section class="block wrap">
+
+      <div id="admin-gate" class="auth-wrap">
+        <div class="eyebrow" style="text-align:center;">Espace interne</div>
+        <h3 style="text-align:center;margin-bottom:22px;">Accès administration</h3>
+        <div class="card">
+          <div class="auth-error" id="err-admin"></div>
+          <div id="admin-gate-setup" style="display:none;">
+            <p style="font-size:13px;color:var(--steel);margin:0 0 16px;">Aucun mot de passe n'est encore défini pour cet espace. Choisissez-en un pour le protéger.</p>
+            <div class="field-row">
+              <div class="field"><label>Nouveau mot de passe</label><input id="admin-pwd-new" type="password" placeholder="6 caractères minimum"></div>
+              <div class="field"><label>Confirmer</label><input id="admin-pwd-new2" type="password" placeholder="6 caractères minimum"></div>
+            </div>
+            <button class="btn-primary" id="btn-admin-setup">Définir le mot de passe</button>
+          </div>
+          <div id="admin-gate-login">
+            <div class="field"><label>Mot de passe administration</label><input id="admin-pwd" type="password" placeholder="••••••••"></div>
+            <button class="btn-primary" id="btn-admin-login">Déverrouiller</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="admin-dashboard" style="display:none;">
+        <div class="espace-header">
+          <div class="block-head" style="margin-bottom:0;">
+            <div>
+              <div class="eyebrow">Espace interne</div>
+              <h3>File de production</h3>
+              <p>Toutes les commandes de tous les clients, classées par étape.</p>
+            </div>
+          </div>
+          <button class="btn-logout" id="btn-admin-lock">Verrouiller</button>
+        </div>
+
+        <div class="stat-row">
+          <div class="stat-card"><div class="eyebrow">Commandes totales</div><strong id="stat-total">0</strong></div>
+          <div class="stat-card"><div class="eyebrow">En cours</div><strong id="stat-cours">0</strong></div>
+        </div>
+
+        <div class="admin-subnav">
+          <button data-admin-view="production" class="active">Production</button>
+          <button data-admin-view="kanban">Préparation de commande</button>
+          <button data-admin-view="logistics">Logistique livraison</button>
+          <div class="admin-subnav-more">
+            <button id="admin-more-toggle" type="button">Plus ▾</button>
+            <div class="admin-subnav-more-menu" id="admin-more-menu">
+              <button data-admin-view="stats">Statistiques</button>
+              <button data-admin-view="facture">Facture</button>
+              <button data-admin-view="historique">Historique des livraisons</button>
+              <button data-admin-view="articles">Gestion des articles</button>
+              <button data-admin-view="garage">Garage</button>
+              <button data-admin-view="clients">Gestion des clients</button>
+              <button data-admin-view="settings">Réglages</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="admin-view-production" class="admin-subview">
+          <div class="card" style="margin-bottom:20px;">
+            <h4 class="card-subhead">À préparer — total tous clients confondus</h4>
+            <p style="font-size:12.5px;color:var(--steel);margin:0 0 14px;">Quantités cumulées des commandes « Reçue » et « En traitement ». Une commande passée « Prête » n'est plus comptée ici — elle est déjà sortie du stock.</p>
+            <div id="production-totals"></div>
+          </div>
+
+          <p style="font-size:12.5px;color:var(--steel);margin:0 0 14px;">Commandes actuellement en traitement, réparties par étape de lavage. Glissez une étiquette pour la faire avancer.</p>
+
+          <div class="settings-row" style="align-items:end;margin-bottom:14px;">
+            <div class="field" style="max-width:280px;">
+              <label>Filtrer par hôtel</label>
+              <select id="production-hotel-filter"><option value="">— Tous les hôtels —</option></select>
+            </div>
+            <div class="field" style="max-width:200px;">
+              <label>Livraison prévue jusqu'au</label>
+              <input type="date" id="production-date-filter">
+            </div>
+            <button class="btn-secondary" id="btn-clear-production-date-filter" style="width:auto;">Réinitialiser</button>
+            <button class="btn-secondary" id="btn-new-manual-production" style="width:auto;">+ Nouvel ordre de lavage</button>
+          </div>
+
+          <div id="production-progress"></div>
+
+          <div class="kanban" id="production-kanban"></div>
+        </div>
+
+        <div id="admin-view-kanban" class="admin-subview" style="display:none;">
+          <div class="settings-row" style="align-items:end;margin-bottom:14px;">
+            <div class="field" style="max-width:200px;">
+              <label>Livraison prévue jusqu'au</label>
+              <input type="date" id="kanban-date-filter">
+            </div>
+            <button class="btn-secondary" id="btn-clear-kanban-date-filter" style="width:auto;">Réinitialiser</button>
+            <button class="btn-secondary" id="btn-new-manual-order" style="width:auto;">+ Nouvelle commande</button>
+          </div>
+          <div class="kanban" id="kanban"></div>
+        </div>
+
+        <div id="admin-view-logistics" class="admin-subview" style="display:none;">
+          <div class="card" style="margin-bottom:20px;">
+            <h4 class="card-subhead">Chauffeurs</h4>
+            <div id="drivers-list"></div>
+            <div class="settings-row" style="margin-top:12px;">
+              <div class="field"><label>Nom</label><input id="new-driver-name" placeholder="Ex. Karim"></div>
+              <div class="field"><label>Véhicule (optionnel)</label><input id="new-driver-vehicle" placeholder="Ex. Camionnette 1"></div>
+              <div class="field">
+                <label>Type de camion (optionnel)</label>
+                <select id="new-driver-truck-type"><option value="">— Aucun —</option></select>
+              </div>
+              <button class="btn-secondary" id="btn-add-driver">+ Ajouter</button>
+            </div>
+          </div>
+          <p style="font-size:12.5px;color:var(--steel);margin:0 0 14px;">Commandes prêtes à livrer. Glissez une étiquette vers un chauffeur pour l'assigner à sa tournée.</p>
+          <div class="kanban" id="logistics-kanban"></div>
+        </div>
+
+        <div id="admin-view-stats" class="admin-subview" style="display:none;">
+          <div class="card" style="margin-bottom:20px;">
+            <h4 class="card-subhead">Poser une question sur vos données</h4>
+            <p style="font-size:12.5px;color:var(--steel);margin:0 0 12px;">L'agent interroge réellement votre base (lecture seule, aucune écriture possible) pour répondre avec des chiffres exacts — pas des estimations. Ex. « Quel hôtel a généré le plus de chiffre d'affaires ce mois-ci ? », « Quel est notre NPS moyen sur les 3 derniers mois ? »</p>
+            <div class="field-row" style="align-items:end;">
+              <div class="field"><label>Votre question</label><input id="ai-report-question" placeholder="Ex. Combien de commandes avons-nous livrées la semaine dernière ?"></div>
+              <button class="btn-primary" id="btn-ask-ai-report" style="width:auto;">Poser la question</button>
+            </div>
+            <div id="ai-report-answer" style="margin-top:14px;"></div>
+          </div>
+          <div id="stats-content"></div>
+        </div>
+
+        <div id="admin-view-articles" class="admin-subview" style="display:none;">
+          <div class="card" style="margin-bottom:20px;">
+            <div class="collapsible-head"><h4 class="card-subhead">Catalogue</h4><button class="collapse-toggle" data-collapse-target="section-catalogue">▾</button></div>
+            <div id="section-catalogue">
+              <button class="btn-secondary" id="btn-add-article" style="margin-bottom:14px;">+ Ajouter un article</button>
+              <div id="article-form-zone"></div>
+              <div id="articles-list"></div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom:20px;">
+            <div class="collapsible-head"><h4 class="card-subhead">Types de chariots</h4><button class="collapse-toggle" data-collapse-target="section-cart-types">▾</button></div>
+            <div id="section-cart-types">
+              <p style="font-size:12.5px;color:var(--steel);margin:0 0 14px;">Dimensions réelles de vos chariots — utilisées en Logistique pour recommander une combinaison de chariots selon le volume à transporter.</p>
+              <div id="cart-types-list"></div>
+              <div class="field-row" style="margin-top:12px;align-items:end;">
+                <div class="field"><label>Nom</label><input id="new-cart-name" placeholder="Ex. Cabri"></div>
+                <div class="field"><label>Longueur (cm)</label><input type="number" min="1" id="new-cart-length" placeholder="50"></div>
+                <div class="field"><label>Largeur (cm)</label><input type="number" min="1" id="new-cart-width" placeholder="70"></div>
+                <div class="field"><label>Hauteur (cm)</label><input type="number" min="1" id="new-cart-height" placeholder="180"></div>
+                <button class="btn-secondary" id="btn-add-cart-type">+ Ajouter</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom:20px;">
+            <div class="collapsible-head"><h4 class="card-subhead">Types de camions</h4><button class="collapse-toggle" data-collapse-target="section-truck-types">▾</button></div>
+            <div id="section-truck-types">
+              <p style="font-size:12.5px;color:var(--steel);margin:0 0 14px;">Cotes intérieures utiles réelles de vos véhicules — rattachez-en un à un chauffeur (en Logistique) pour vérifier que le volume à transporter tient réellement dedans.</p>
+              <div id="truck-types-list"></div>
+              <div class="field-row" style="margin-top:12px;align-items:end;">
+                <div class="field"><label>Nom</label><input id="new-truck-name" placeholder="Ex. Jumper H2L1"></div>
+                <div class="field"><label>Longueur (cm)</label><input type="number" min="1" id="new-truck-length" placeholder="267"></div>
+                <div class="field"><label>Largeur (cm)</label><input type="number" min="1" id="new-truck-width" placeholder="187"></div>
+                <div class="field"><label>Hauteur (cm)</label><input type="number" min="1" id="new-truck-height" placeholder="193"></div>
+                <button class="btn-secondary" id="btn-add-truck-type">+ Ajouter</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom:20px;">
+            <div class="collapsible-head"><h4 class="card-subhead">Attribution par hôtel</h4><button class="collapse-toggle" data-collapse-target="section-attribution">▾</button></div>
+            <div id="section-attribution">
+            <p style="font-size:12.5px;color:var(--steel);margin:0 0 14px;">Par défaut, un hôtel voit tout le catalogue. Cochez des articles précis pour un hôtel afin de limiter ce qu'il peut commander — utile si certains articles (une couleur, une variante) ne concernent qu'un établissement en particulier.</p>
+            <div class="field" style="max-width:360px;margin-bottom:14px;">
+              <label>Hôtel</label>
+              <select id="articles-client-select"><option value="">— Choisir un hôtel —</option></select>
+            </div>
+            <div id="articles-client-assignment"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="admin-view-garage" class="admin-subview" style="display:none;">
+          <p style="font-size:12.5px;color:var(--steel);margin:0 0 16px;">Suivi du kilométrage et de l'entretien de vos véhicules. Les types de camions eux-mêmes se gèrent dans « Gestion des articles ».</p>
+          <div id="garage-trucks-list"></div>
+        </div>
+
+        <div id="admin-view-clients" class="admin-subview" style="display:none;">
+          <div class="card" style="margin-bottom:20px;">
+            <h4 class="card-subhead">Hôtels clients</h4>
+            <p style="font-size:12.5px;color:var(--steel);margin:0 0 14px;">Modifier les coordonnées d'un hôtel, réinitialiser son code d'accès s'il l'a oublié, ou en créer un manuellement.</p>
+            <button class="btn-secondary" id="btn-add-client" style="margin-bottom:14px;">+ Ajouter un hôtel</button>
+            <div id="client-form-zone"></div>
+            <div id="clients-list"></div>
+          </div>
+        </div>
+
+        <div id="admin-view-facture" class="admin-subview" style="display:none;">
+          <div class="card" style="margin-bottom:20px;">
+            <h4 class="card-subhead">Réglages Odoo</h4>
+            <p style="font-size:12.5px;color:var(--steel);margin:0 0 14px;">Taxe appliquée à chaque ligne de facture générée — Odoo ne la déduit jamais automatiquement par API, elle doit être choisie explicitement une fois ici. S'applique à tous les hôtels.</p>
+            <div class="field-row" style="align-items:end;">
+              <div class="field" style="max-width:320px;">
+                <label>Taxe de vente à appliquer</label>
+                <select id="settings-odoo-tax"><option value="">— Charger depuis Odoo —</option></select>
+              </div>
+              <button class="btn-secondary" id="btn-refresh-odoo-taxes" style="width:auto;">Actualiser depuis Odoo</button>
+              <button class="btn-secondary" id="btn-save-odoo-settings" style="width:auto;">Enregistrer</button>
+            </div>
+            <div class="settings-save-note" id="odoo-settings-save-note"></div>
+          </div>
+
+          <div class="card">
+            <h4 class="card-subhead">Facturation par hôtel</h4>
+            <div class="field" style="max-width:360px;margin-bottom:16px;">
+              <label>Hôtel</label>
+              <select id="facture-client-select"><option value="">— Choisir un hôtel —</option></select>
+            </div>
+            <div id="facture-client-content" style="display:none;">
+              <div id="facture-odoo-status" style="font-size:12px;color:var(--steel);margin-bottom:8px;"></div>
+              <button class="btn-secondary" id="btn-facture-odoo-sync" style="width:auto;">Synchroniser vers Odoo</button>
+              <div class="qty-save-note" id="facture-odoo-note"></div>
+
+              <div style="border-top:1px solid var(--line);margin-top:18px;padding-top:14px;">
+                <div class="field-row" style="align-items:end;">
+                  <div class="field"><label>Niveau de détail sur la facture Odoo</label>
+                    <select id="facture-detail-level">
+                      <option value="detail">Détail par article et par BL (une ligne commentaire par BL + le détail dessous)</option>
+                      <option value="per_bl">Une seule ligne par BL (montant total de la livraison)</option>
+                      <option value="aggregated">Agrégé par article sur toute la période</option>
+                    </select>
+                  </div>
+                  <button class="btn-secondary" id="btn-facture-save-detail-level" style="width:auto;">Enregistrer</button>
+                </div>
+                <div class="qty-save-note" id="facture-detail-level-note"></div>
+              </div>
+
+              <div style="border-top:1px solid var(--line);margin-top:18px;padding-top:14px;">
+                <h5 style="font-size:12.5px;font-weight:600;color:var(--ink);margin:0 0 8px;">Générer une facture</h5>
+                <p style="font-size:11px;color:var(--steel-light);margin:0 0 10px;">Facture créée en BROUILLON dans Odoo — rien n'est validé automatiquement, à relire et confirmer là-bas.</p>
+                <div id="invoiceable-orders-facture"><p class="empty-note">Chargement…</p></div>
+                <button class="btn-primary" id="btn-generate-invoice-facture" style="width:auto;margin-top:10px;" disabled>Générer la facture</button>
+                <div class="qty-save-note" id="invoice-note-facture"></div>
+                <div id="past-invoices-facture" style="margin-top:14px;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="admin-view-settings" class="admin-subview" style="display:none;">
+          <div class="card settings-card">
+            <h4>Réglages — Bons de livraison</h4>
+            <p>Adresse email vers laquelle envoyer les bons de livraison générés depuis une commande.</p>
+            <div class="settings-row">
+              <div class="field"><label>Votre email</label><input id="settings-email" type="email" placeholder="vous@blanchisserie-cezanne.fr"></div>
+              <button class="btn-secondary" id="btn-save-settings">Enregistrer</button>
+            </div>
+            <div class="settings-save-note" id="settings-save-note">Adresse enregistrée.</div>
+          </div>
+
+          <div class="card settings-card">
+            <h4>Réglages — Logistique</h4>
+            <p>Capacité utilisée pour le calcul de charge des camions, et adresse de départ pour l'optimisation des tournées. Les types de chariots se gèrent dans l'onglet « Gestion des articles ».</p>
+            <div class="settings-row">
+              <div class="field"><label>Charge max. d'un camion (kg)</label><input type="number" min="1" id="settings-truck-capacity" placeholder="1200"></div>
+              <div class="field"><label>Poids d'un chariot vide (kg)</label><input type="number" min="0" id="settings-cart-weight" placeholder="20"></div>
+              <div class="field"><label>Poids max. de linge par chariot (kg)</label><input type="number" min="1" id="settings-max-cart-weight" placeholder="120"></div>
+            </div>
+            <div class="settings-row" style="margin-top:12px;">
+              <div class="field"><label>Vitesse moyenne estimée (km/h)</label><input type="number" min="1" id="settings-avg-speed" placeholder="40"></div>
+              <div class="field"><label>Temps par arrêt (min)</label><input type="number" min="0" id="settings-minutes-per-stop" placeholder="20"></div>
+              <button class="btn-secondary" id="btn-save-logistics-settings">Enregistrer</button>
+            </div>
+            <div class="field" style="max-width:420px;margin-top:12px;">
+              <label>Adresse de départ des tournées (dépôt)</label>
+              <input id="settings-depot-address" placeholder="Ex. 35 rue Théodore Aubanel, 84200 Carpentras">
+            </div>
+            <button class="btn-secondary" id="btn-save-depot" style="width:auto;margin-top:8px;">Enregistrer l'adresse</button>
+            <div class="settings-save-note" id="logistics-settings-save-note"></div>
+          </div>
+
+          <div class="card settings-card">
+            <h4>Règles de conditionnement</h4>
+            <p>Logique appliquée par « Organiser le conditionnement » (détail d'une commande) pour répartir les articles dans les chariots choisis. Les deux premières règles ne se désactivent pas — ce sont des limites physiques réelles.</p>
+            <ul class="rules-list">
+              <li><b>Limite de volume par chariot</b> — dépend des dimensions du chariot choisi (Gestion des articles → Types de chariots). Jamais dépassée.</li>
+              <li><b>Limite de poids par chariot</b> — <span id="rules-max-weight-echo">120</span> kg maximum, réglable ci-dessus (« Poids max. de linge par chariot »). Jamais dépassée.</li>
+              <li><b>Chargement du plus lourd au plus léger</b> — dans chaque chariot, les articles les plus lourds sont placés en premier (donc au fond), pour la stabilité du chargement.</li>
+              <li><b>Regroupement des références</b> — réglable ci-dessous : évite de disperser une même référence entre plusieurs chariots quand c'est possible, quitte à moins bien équilibrer le poids entre chariots.</li>
+            </ul>
+            <div class="field-row" style="margin-top:14px;align-items:center;">
+              <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink);cursor:pointer;">
+                <input type="checkbox" id="settings-prioritize-grouping" style="width:16px;height:16px;">
+                Regrouper les références en priorité (décoché = équilibrer le poids en priorité)
+              </label>
+              <button class="btn-secondary" id="btn-save-grouping-strategy">Enregistrer</button>
+            </div>
+            <div class="settings-save-note" id="grouping-strategy-save-note"></div>
+          </div>
+        </div>
+
+        <div id="admin-view-historique" style="display:none;">
+          <div class="history-filters">
+            <div class="field"><label>Du</label><input type="date" id="hist-date-from"></div>
+            <div class="field"><label>Au</label><input type="date" id="hist-date-to"></div>
+            <div class="field">
+              <label>Client</label>
+              <select id="hist-client"><option value="">Tous les clients</option></select>
+            </div>
+            <button class="btn-secondary" id="btn-hist-reset">Réinitialiser</button>
+          </div>
+          <div class="own-orders" id="history-list"></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===================== MODAL: APERÇU COMMANDE ===================== -->
+  <div class="modal-overlay" id="order-modal" role="dialog" aria-modal="true" aria-label="Détail de la commande">
+    <div class="modal-shell">
+      <button class="modal-close" id="modal-close" aria-label="Fermer">✕</button>
+      <div class="modal-inner">
+        <div class="ticket" id="modal-ticket"></div>
+        <div class="card modal-actions" id="modal-delivery-note" style="display:none;"></div>
+        <div class="card modal-actions" id="modal-team-zone" style="display:none;"></div>
+        <div class="card modal-actions" id="modal-conditioning-zone" style="display:none;"></div>
+        <div class="card modal-actions" id="modal-order-manage-zone" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== MODAL: CRÉATION MANUELLE ===================== -->
+  <div class="modal-overlay" id="manual-order-modal" role="dialog" aria-modal="true" aria-label="Créer une commande">
+    <div class="modal-shell">
+      <button class="modal-close" id="manual-order-modal-close" aria-label="Fermer">✕</button>
+      <div class="modal-inner" id="manual-order-modal-inner"></div>
+    </div>
+  </div>
+
+
+</main>
+
+<footer>Blanchisserie Cézanne — application connectée à une base de données SQLite · <button id="footer-admin-link" style="background:none;border:none;padding:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer;">Administration</button></footer>
+
+<script src="/app.js"></script>
+</body>
+</html>
